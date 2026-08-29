@@ -66,10 +66,12 @@ val NightBlueTextSecondary = Color(0xFF8899AA)
 // Semantic Colors
 val ErrorRed = Color(0xFFEF5350)
 val ErrorRedDark = Color(0xFFD32F2F)
+val KhqrRed = Color(0xFFE53935)
 val WarningAmber = Color(0xFFFFB300)
 val WarningAmberDark = Color(0xFFF57F17)
 val SuccessGreen = Color(0xFF4CAF50)
 val InfoBlue = Color(0xFF42A5F5)
+val Blue500 = Color(0xFF2196F3)
 
 // Payment Method Colors
 val CashColor = Color(0xFF66BB6A)

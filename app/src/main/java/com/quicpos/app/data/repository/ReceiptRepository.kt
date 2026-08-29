@@ -46,7 +46,14 @@ class ReceiptRepository @Inject constructor(
         changeGiven: Double = 0.0,
         customerName: String? = null
     ): String {
-        val receiptNumber = generateReceiptNumber()
+        val counter = settingsRepository.getAndIncrementReceiptCounter()
+        val register = settingsRepository.getPosRegisterName()
+            .replace("POS ", "")
+            .replace(" ", "")
+        val receiptNumber = "#${register}-${counter.toString().padStart(4, '0')}"
+
+        val finalCashTendered = if (cashTendered <= 0.0) totalAmount else cashTendered
+        val finalChangeGiven = maxOf(0.0, finalCashTendered - totalAmount)
 
         val receipt = ReceiptEntity(
             receiptNumber = receiptNumber,
@@ -56,8 +63,8 @@ class ReceiptRepository @Inject constructor(
             discountAmount = discountAmount,
             totalAmount = totalAmount,
             paymentMethod = paymentMethod,
-            cashTendered = cashTendered,
-            changeGiven = changeGiven,
+            cashTendered = finalCashTendered,
+            changeGiven = finalChangeGiven,
             customerName = customerName,
             status = "COMPLETED",
             posRegister = settingsRepository.getPosRegisterName()
@@ -89,11 +96,37 @@ class ReceiptRepository @Inject constructor(
 
     suspend fun refundReceipt(receiptNumber: String) {
         receiptDao.updateReceiptStatus(receiptNumber, "REFUNDED")
-        // Restore stock
+        // Restore full stock
         val lines = receiptDao.getReceiptLines(receiptNumber)
         lines.forEach { line ->
             itemDao.decrementStock(line.itemId, -line.quantity) // negative = add back
         }
+    }
+
+    suspend fun refundPartialReceipt(
+        receiptNumber: String,
+        refundedItems: Map<Long, Double> // itemId -> quantityToRefund
+    ) {
+        val (receipt, lines) = getReceiptWithLines(receiptNumber) ?: return
+        var totalRefundedAmount = 0.0
+        var allItemsFullyRefunded = true
+
+        lines.forEach { line ->
+            val refundQty = refundedItems[line.itemId] ?: 0.0
+            if (refundQty > 0) {
+                val clampedQty = minOf(refundQty, line.quantity)
+                itemDao.decrementStock(line.itemId, -clampedQty) // Restore inventory stock
+                totalRefundedAmount += clampedQty * line.unitPrice
+            }
+            val remainingQty = line.quantity - (refundedItems[line.itemId] ?: 0.0)
+            if (remainingQty > 0.001) {
+                allItemsFullyRefunded = false
+            }
+        }
+
+        val newStatus = if (allItemsFullyRefunded) "REFUNDED" else "PARTIALLY_REFUNDED"
+        val remainingTotal = maxOf(0.0, receipt.totalAmount - totalRefundedAmount)
+        receiptDao.updateReceiptStatusAndTotal(receiptNumber, newStatus, remainingTotal)
     }
 
     fun getReceiptCount(): Flow<Int> = receiptDao.getReceiptCount()
@@ -103,14 +136,6 @@ class ReceiptRepository @Inject constructor(
 
     suspend fun getCompletedReceiptLinesInRange(startTime: Long, endTime: Long): List<ReceiptLineEntity> =
         receiptDao.getCompletedReceiptLinesInRange(startTime, endTime)
-
-    private suspend fun generateReceiptNumber(): String {
-        val counter = settingsRepository.getAndIncrementReceiptCounter()
-        val register = settingsRepository.getPosRegisterName()
-            .replace("POS ", "")
-            .replace(" ", "")
-        return "#${register}-${counter.toString().padStart(4, '0')}"
-    }
 
     companion object {
         fun ReceiptEntity.toDomain(): Receipt = Receipt(

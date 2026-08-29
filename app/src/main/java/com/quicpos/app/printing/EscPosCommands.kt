@@ -63,6 +63,21 @@ object EscPosCommands {
     }
 
     /**
+     * Parse hex string like "1B40" or "1B 70 00 19 FF" into ByteArray.
+     */
+    fun hexToBytes(hex: String): ByteArray {
+        val cleanHex = hex.replace(" ", "").replace("0x", "", ignoreCase = true).trim()
+        if (cleanHex.length % 2 != 0 || cleanHex.isBlank()) return byteArrayOf()
+        return try {
+            ByteArray(cleanHex.length / 2) { i ->
+                cleanHex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+            }
+        } catch (e: Exception) {
+            byteArrayOf()
+        }
+    }
+
+    /**
      * Convert an Android Bitmap into ESC/POS GS v 0 raster bit image bytes.
      * Compatible with 58mm (384 dots) and 80mm (576 dots) thermal printers.
      */

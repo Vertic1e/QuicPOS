@@ -114,6 +114,18 @@ class SettingsRepository @Inject constructor(
         settingsDao.setValueForKey(SettingsEntity.KEY_USE_BARCODE_SCANNER, enabled.toString())
 
     // Printer
+    suspend fun getPrinterName(): String =
+        settingsDao.getValue(SettingsEntity.KEY_PRINTER_NAME) ?: SettingsEntity.DEFAULT_PRINTER_NAME
+
+    suspend fun setPrinterName(name: String) =
+        settingsDao.setValueForKey(SettingsEntity.KEY_PRINTER_NAME, name)
+
+    suspend fun getPrinterModel(): String =
+        settingsDao.getValue(SettingsEntity.KEY_PRINTER_MODEL) ?: SettingsEntity.DEFAULT_PRINTER_MODEL
+
+    suspend fun setPrinterModel(model: String) =
+        settingsDao.setValueForKey(SettingsEntity.KEY_PRINTER_MODEL, model)
+
     suspend fun getPrinterType(): String =
         settingsDao.getValue(SettingsEntity.KEY_PRINTER_TYPE) ?: SettingsEntity.DEFAULT_PRINTER_TYPE
 
@@ -132,6 +144,36 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setPrinterPort(port: Int) =
         settingsDao.setValueForKey(SettingsEntity.KEY_PRINTER_PORT, port.toString())
+
+    suspend fun getPaperWidth(): String =
+        settingsDao.getValue(SettingsEntity.KEY_PAPER_WIDTH) ?: SettingsEntity.DEFAULT_PAPER_WIDTH
+
+    suspend fun setPaperWidth(width: String) =
+        settingsDao.setValueForKey(SettingsEntity.KEY_PAPER_WIDTH, width)
+
+    suspend fun getPrintMode(): String =
+        settingsDao.getValue(SettingsEntity.KEY_PRINT_MODE) ?: SettingsEntity.DEFAULT_PRINT_MODE
+
+    suspend fun setPrintMode(mode: String) =
+        settingsDao.setValueForKey(SettingsEntity.KEY_PRINT_MODE, mode)
+
+    suspend fun getEscInitCmd(): String =
+        settingsDao.getValue(SettingsEntity.KEY_ESC_INIT_CMD) ?: SettingsEntity.DEFAULT_ESC_INIT_CMD
+
+    suspend fun setEscInitCmd(cmd: String) =
+        settingsDao.setValueForKey(SettingsEntity.KEY_ESC_INIT_CMD, cmd)
+
+    suspend fun getEscCutCmd(): String =
+        settingsDao.getValue(SettingsEntity.KEY_ESC_CUT_CMD) ?: SettingsEntity.DEFAULT_ESC_CUT_CMD
+
+    suspend fun setEscCutCmd(cmd: String) =
+        settingsDao.setValueForKey(SettingsEntity.KEY_ESC_CUT_CMD, cmd)
+
+    suspend fun getEscDrawerCmd(): String =
+        settingsDao.getValue(SettingsEntity.KEY_ESC_DRAWER_CMD) ?: SettingsEntity.DEFAULT_ESC_DRAWER_CMD
+
+    suspend fun setEscDrawerCmd(cmd: String) =
+        settingsDao.setValueForKey(SettingsEntity.KEY_ESC_DRAWER_CMD, cmd)
 
     // Receipt Template
     suspend fun getReceiptHeader(): String =
@@ -221,9 +263,16 @@ class SettingsRepository @Inject constructor(
         layoutMode = getLayoutMode(),
         language = getLanguage(),
         useBarcodeSanner = isBarcodeScannerEnabled(),
+        printerName = getPrinterName(),
+        printerModel = getPrinterModel(),
         printerType = getPrinterType(),
         printerAddress = getPrinterAddress(),
         printerPort = getPrinterPort(),
+        paperWidth = getPaperWidth(),
+        printMode = getPrintMode(),
+        escInitCmd = getEscInitCmd(),
+        escCutCmd = getEscCutCmd(),
+        escDrawerCmd = getEscDrawerCmd(),
         receiptHeader = getReceiptHeader(),
         receiptFooter = getReceiptFooter(),
         receiptLogoUri = getReceiptLogoUri(),

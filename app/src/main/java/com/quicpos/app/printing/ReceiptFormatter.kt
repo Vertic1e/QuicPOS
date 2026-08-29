@@ -6,7 +6,7 @@ import com.quicpos.app.domain.model.TicketLine
 
 /**
  * Formats receipt data into ESC/POS byte commands for thermal printing.
- * Supports 32 and 48 character width printers and graphic logos.
+ * Supports 32 (58mm) and 48 (80mm) character width printers and graphic logos.
  */
 class ReceiptFormatter(
     private val charWidth: Int = 32 // 32 for 58mm, 48 for 80mm printers
@@ -24,12 +24,16 @@ class ReceiptFormatter(
         isDualCurrencyEnabled: Boolean = false,
         secondaryCurrencyCode: String = "USD",
         exchangeRate: Double = 4000.0,
-        logoBitmap: Bitmap? = null
+        logoBitmap: Bitmap? = null,
+        customInitCmd: String? = null,
+        customCutCmd: String? = null
     ): ByteArray {
         val builder = mutableListOf<ByteArray>()
 
         // Initialize
-        builder.add(EscPosCommands.INIT)
+        val initBytes = customInitCmd?.let { EscPosCommands.hexToBytes(it) }?.takeIf { it.isNotEmpty() }
+            ?: EscPosCommands.INIT
+        builder.add(initBytes)
 
         // Logo Image (if provided)
         if (logoBitmap != null) {
@@ -52,6 +56,18 @@ class ReceiptFormatter(
         if (headerText.isNotBlank()) {
             builder.add(EscPosCommands.textToBytes(headerText))
             builder.add(EscPosCommands.LF)
+        }
+
+        if (receipt.isRefunded) {
+            builder.add(EscPosCommands.BOLD_ON)
+            builder.add(EscPosCommands.textToBytes("*** REFUND RECEIPT ***"))
+            builder.add(EscPosCommands.LF)
+            builder.add(EscPosCommands.BOLD_OFF)
+        } else if (receipt.status == "PARTIALLY_REFUNDED") {
+            builder.add(EscPosCommands.BOLD_ON)
+            builder.add(EscPosCommands.textToBytes("*** PARTIALLY REFUNDED ***"))
+            builder.add(EscPosCommands.LF)
+            builder.add(EscPosCommands.BOLD_OFF)
         }
 
         builder.add(EscPosCommands.LF)
@@ -177,7 +193,9 @@ class ReceiptFormatter(
 
         // Feed and cut
         builder.add(EscPosCommands.feedLines(4))
-        builder.add(EscPosCommands.CUT_PAPER_PARTIAL)
+        val cutBytes = customCutCmd?.let { EscPosCommands.hexToBytes(it) }?.takeIf { it.isNotEmpty() }
+            ?: EscPosCommands.CUT_PAPER_PARTIAL
+        builder.add(cutBytes)
 
         return EscPosCommands.buildCommand(*builder.toTypedArray())
     }

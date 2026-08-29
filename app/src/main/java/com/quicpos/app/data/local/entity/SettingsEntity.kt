@@ -20,9 +20,19 @@ data class SettingsEntity(
         const val KEY_LAYOUT_MODE = "layout_mode" // "GRID" or "LIST"
         const val KEY_LANGUAGE = "language"
         const val KEY_USE_BARCODE_SCANNER = "use_barcode_scanner"
+
+        // Printer Settings
+        const val KEY_PRINTER_NAME = "printer_name"
+        const val KEY_PRINTER_MODEL = "printer_model"
         const val KEY_PRINTER_TYPE = "printer_type" // "BUILT_IN", "BLUETOOTH", "TCP"
         const val KEY_PRINTER_ADDRESS = "printer_address"
         const val KEY_PRINTER_PORT = "printer_port"
+        const val KEY_PAPER_WIDTH = "paper_width" // "58mm", "80mm"
+        const val KEY_PRINT_MODE = "print_mode" // "STANDARD", "RASTER", "RAW"
+        const val KEY_ESC_INIT_CMD = "esc_init_cmd"
+        const val KEY_ESC_CUT_CMD = "esc_cut_cmd"
+        const val KEY_ESC_DRAWER_CMD = "esc_drawer_cmd"
+
         const val KEY_RECEIPT_HEADER = "receipt_header"
         const val KEY_RECEIPT_FOOTER = "receipt_footer"
         const val KEY_RECEIPT_LOGO_URI = "receipt_logo_uri"
@@ -52,8 +62,17 @@ data class SettingsEntity(
         const val DEFAULT_LAYOUT_MODE = "GRID"
         const val DEFAULT_LANGUAGE = "en"
         const val DEFAULT_USE_SCANNER = "true"
+
+        const val DEFAULT_PRINTER_NAME = "Main Thermal Printer"
+        const val DEFAULT_PRINTER_MODEL = "Generic ESC/POS"
         const val DEFAULT_PRINTER_TYPE = "BUILT_IN"
         const val DEFAULT_PRINTER_PORT = "9100"
+        const val DEFAULT_PAPER_WIDTH = "58mm"
+        const val DEFAULT_PRINT_MODE = "STANDARD"
+        const val DEFAULT_ESC_INIT_CMD = "1B40"
+        const val DEFAULT_ESC_CUT_CMD = "1D5601"
+        const val DEFAULT_ESC_DRAWER_CMD = "1B700019FF"
+
         const val DEFAULT_RECEIPT_HEADER = "Thank you for shopping!"
         const val DEFAULT_RECEIPT_FOOTER = "Please come again"
         const val DEFAULT_RECEIPT_LOGO_URI = ""

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quicpos.app.domain.model.Receipt
+import com.quicpos.app.domain.model.TicketLine
 import com.quicpos.app.ui.components.ReceiptPreviewDialog
 import com.quicpos.app.ui.components.SimpleTopBar
 import com.quicpos.app.ui.theme.*
@@ -41,10 +42,10 @@ fun ChargeScreen(
     var tenderCurrency by remember { mutableStateOf(uiState.currencyCode) } // Pay in KHR or USD
     var cashTendered by remember { mutableStateOf("") }
     var isProcessing by remember { mutableStateOf(false) }
-    var showSuccessDialog by remember { mutableStateOf(false) }
     var showReceiptPreview by remember { mutableStateOf(false) }
+    var isSaleFinished by remember { mutableStateOf(false) }
     var completedReceipt by remember { mutableStateOf<Receipt?>(null) }
-    var receiptNumber by remember { mutableStateOf("") }
+    var completedLines by remember { mutableStateOf<List<TicketLine>>(emptyList()) }
 
     val totalPrimary = uiState.grandTotal
     val totalSecondary = uiState.convertToSecondary(totalPrimary)
@@ -53,25 +54,25 @@ fun ChargeScreen(
     val enteredAmount = cashTendered.toDoubleOrNull() ?: 0.0
 
     val (cashAmountPrimary, isAmountSufficient) = if (tenderCurrency == uiState.currencyCode) {
-        enteredAmount to (enteredAmount >= totalPrimary)
+        enteredAmount to (enteredAmount >= totalPrimary || enteredAmount == 0.0)
     } else {
         val converted = uiState.convertToPrimary(enteredAmount)
-        converted to (enteredAmount >= totalSecondary - 0.001)
+        converted to (enteredAmount >= totalSecondary - 0.001 || enteredAmount == 0.0)
     }
 
     val changeAmountPrimary = (cashAmountPrimary - totalPrimary).coerceAtLeast(0.0)
     val changeAmountSecondary = uiState.convertToSecondary(changeAmountPrimary)
 
-    // Preview receipt object
+    // Fallback preview receipt object
     val previewReceipt = Receipt(
-        receiptNumber = if (receiptNumber.isNotBlank()) receiptNumber else "#PREVIEW",
+        receiptNumber = "#PREVIEW",
         timestamp = System.currentTimeMillis(),
         subtotalAmount = uiState.subtotal,
         taxAmount = 0.0,
         discountAmount = uiState.totalDiscount,
         totalAmount = uiState.grandTotal,
         paymentMethod = selectedPayment,
-        cashTendered = cashAmountPrimary,
+        cashTendered = if (cashAmountPrimary > 0) cashAmountPrimary else totalPrimary,
         changeGiven = changeAmountPrimary,
         customerName = uiState.customerName,
         status = "COMPLETED",
@@ -84,9 +85,12 @@ fun ChargeScreen(
                 title = "Charge",
                 onBackClick = onNavigateBack,
                 actions = {
-                    IconButton(onClick = { showReceiptPreview = true }) {
+                    IconButton(onClick = {
+                        isSaleFinished = false
+                        showReceiptPreview = true
+                    }) {
                         Icon(
-                            imageVector = Icons.Filled.ReceiptLong,
+                            imageVector = Icons.Filled.Receipt,
                             contentDescription = "Preview Receipt",
                             tint = Green500
                         )
@@ -146,171 +150,163 @@ fun ChargeScreen(
                 text = "Payment Method",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.primary
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 PaymentMethodButton(
-                    icon = Icons.Filled.Money,
+                    icon = Icons.Filled.Payments,
                     label = "Cash",
                     isSelected = selectedPayment == "CASH",
-                    color = CashColor,
+                    color = Green500,
                     onClick = { selectedPayment = "CASH" },
+                    modifier = Modifier.weight(1f)
+                )
+                PaymentMethodButton(
+                    icon = Icons.Filled.QrCode2,
+                    label = "KHQR",
+                    isSelected = selectedPayment == "KHQR",
+                    color = KhqrRed,
+                    onClick = { selectedPayment = "KHQR" },
                     modifier = Modifier.weight(1f)
                 )
                 PaymentMethodButton(
                     icon = Icons.Filled.CreditCard,
                     label = "Card",
                     isSelected = selectedPayment == "CARD",
-                    color = CardColor,
+                    color = Blue500,
                     onClick = { selectedPayment = "CARD" },
                     modifier = Modifier.weight(1f)
                 )
                 PaymentMethodButton(
-                    icon = Icons.Filled.QrCode2,
-                    label = "QR / Other",
-                    isSelected = selectedPayment == "OTHER",
-                    color = OtherPaymentColor,
-                    onClick = { selectedPayment = "OTHER" },
+                    icon = Icons.Filled.AccountBalanceWallet,
+                    label = "Wallet",
+                    isSelected = selectedPayment == "WALLET",
+                    color = WarningAmber,
+                    onClick = { selectedPayment = "WALLET" },
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            // Cash Tendered Input (only for cash)
-            AnimatedVisibility(visible = selectedPayment == "CASH") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Currency Selector if Dual Currency is Enabled
-                    if (uiState.isDualCurrencyEnabled) {
+            // Cash Tender Section (when Cash is selected)
+            if (selectedPayment == "CASH") {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Currency Selector for Cash Tender
+                        if (uiState.isDualCurrencyEnabled) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Pay With",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(
+                                        selected = tenderCurrency == uiState.currencyCode,
+                                        onClick = {
+                                            tenderCurrency = uiState.currencyCode
+                                            cashTendered = ""
+                                        },
+                                        label = { Text(uiState.currencyCode) }
+                                    )
+                                    FilterChip(
+                                        selected = tenderCurrency == uiState.secondaryCurrencyCode,
+                                        onClick = {
+                                            tenderCurrency = uiState.secondaryCurrencyCode
+                                            cashTendered = ""
+                                        },
+                                        label = { Text(uiState.secondaryCurrencyCode) }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Cash Tendered Input
+                        OutlinedTextField(
+                            value = cashTendered,
+                            onValueChange = { cashTendered = it },
+                            label = { Text("Cash Received (Optional - Defaults to Exact Total)") },
+                            placeholder = {
+                                val exactVal = if (tenderCurrency == uiState.currencyCode) totalPrimary else totalSecondary
+                                Text("Exact: $tenderCurrency ${formatAmount(exactVal)}")
+                            },
+                            prefix = { Text("$tenderCurrency ") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Quick Cash Suggestion Buttons
+                        val quickAmounts = if (tenderCurrency == "KHR") {
+                            listOf(
+                                totalPrimary,
+                                Math.ceil(totalPrimary / 5000.0) * 5000.0,
+                                Math.ceil(totalPrimary / 10000.0) * 10000.0,
+                                Math.ceil(totalPrimary / 20000.0) * 20000.0
+                            ).distinct().filter { it >= totalPrimary }
+                        } else {
+                            listOf(
+                                totalSecondary,
+                                Math.ceil(totalSecondary),
+                                Math.ceil(totalSecondary / 5.0) * 5.0,
+                                Math.ceil(totalSecondary / 10.0) * 10.0
+                            ).distinct().filter { it >= totalSecondary }
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            FilterChip(
-                                selected = tenderCurrency == uiState.currencyCode,
-                                onClick = {
-                                    tenderCurrency = uiState.currencyCode
-                                    cashTendered = ""
-                                },
-                                label = { Text("Pay in ${uiState.currencyCode} (${uiState.currencySymbol})") },
-                                modifier = Modifier.weight(1f),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Green500,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                            FilterChip(
-                                selected = tenderCurrency == uiState.secondaryCurrencyCode,
-                                onClick = {
-                                    tenderCurrency = uiState.secondaryCurrencyCode
-                                    cashTendered = ""
-                                },
-                                label = { Text("Pay in ${uiState.secondaryCurrencyCode} (${uiState.secondaryCurrencySymbol})") },
-                                modifier = Modifier.weight(1f),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Green500,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-                    }
-
-                    OutlinedTextField(
-                        value = cashTendered,
-                        onValueChange = { cashTendered = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Cash Tendered ($tenderCurrency)") },
-                        prefix = { Text("$tenderCurrency ") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    // Quick Cash Buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val quickAmounts = if (tenderCurrency == uiState.currencyCode) {
-                            listOf(
-                                totalPrimary,
-                                (totalPrimary / 1000).toLong() * 1000.0 + 1000.0,
-                                (totalPrimary / 5000).toLong() * 5000.0 + 5000.0,
-                                (totalPrimary / 10000).toLong() * 10000.0 + 10000.0
-                            ).distinct().take(4)
-                        } else {
-                            val roundedSec = kotlin.math.ceil(totalSecondary)
-                            listOf(
-                                totalSecondary,
-                                roundedSec,
-                                roundedSec + 5.0,
-                                roundedSec + 10.0
-                            ).distinct().take(4)
-                        }
-
-                        quickAmounts.forEach { amount ->
-                            OutlinedButton(
-                                onClick = {
-                                    cashTendered = if (tenderCurrency == "KHR") amount.toLong().toString() else String.format("%.2f", amount)
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = formatAmount(amount),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    maxLines = 1
+                            quickAmounts.take(4).forEach { amount ->
+                                AssistChip(
+                                    onClick = { cashTendered = formatAmount(amount).replace(",", "") },
+                                    label = { Text(formatAmount(amount)) },
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }
-                    }
 
-                    // Change Display
-                    if (enteredAmount > 0 && isAmountSufficient) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                        // Change Calculation Display
+                        if (enteredAmount > 0) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Change Due",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                Text(
+                                    text = "Change Due",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Column(horizontalAlignment = Alignment.End) {
                                     Text(
                                         text = "${uiState.currencyCode} ${formatAmount(changeAmountPrimary)}",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = WarningAmber
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (isAmountSufficient) Green500 else MaterialTheme.colorScheme.error
                                     )
-                                }
-
-                                if (uiState.isDualCurrencyEnabled && changeAmountPrimary > 0) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.End
-                                    ) {
+                                    if (uiState.isDualCurrencyEnabled && isAmountSufficient) {
                                         Text(
-                                            text = "≈ ${uiState.secondaryCurrencyCode} ${formatAmount(changeAmountSecondary)}",
+                                            text = "(${uiState.secondaryCurrencyCode} ${formatAmount(changeAmountSecondary)})",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = WarningAmber
                                         )
                                     }
                                 }
@@ -320,21 +316,35 @@ fun ChargeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Customer Name
+            OutlinedTextField(
+                value = uiState.customerName ?: "",
+                onValueChange = { viewModel.onIntent(SalesIntent.SetCustomerName(it.ifBlank { null })) },
+                label = { Text("Customer Name (Optional)") },
+                placeholder = { Text("e.g. Table 4 / John") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
 
-            // Action Buttons: Preview & Complete
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Action Buttons: Cancel and 1-Tap Charge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
-                    onClick = { showReceiptPreview = true },
+                    onClick = {
+                        isSaleFinished = false
+                        showReceiptPreview = true
+                    },
                     modifier = Modifier
-                        .weight(0.4f)
+                        .weight(0.35f)
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Filled.ReceiptLong, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Filled.Receipt, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Preview")
                 }
@@ -344,23 +354,24 @@ fun ChargeScreen(
                         isProcessing = true
                         scope.launch {
                             try {
-                                val number = viewModel.completeSale(
+                                val (receipt, lines) = viewModel.completeSaleAndAutoPrint(
                                     paymentMethod = selectedPayment,
-                                    cashTendered = cashAmountPrimary,
+                                    cashTendered = if (cashAmountPrimary > 0) cashAmountPrimary else totalPrimary,
                                     customerName = uiState.customerName
                                 )
-                                receiptNumber = number
-                                completedReceipt = previewReceipt.copy(receiptNumber = number)
-                                showSuccessDialog = true
+                                completedReceipt = receipt
+                                completedLines = lines
+                                isSaleFinished = true
+                                showReceiptPreview = true
                             } finally {
                                 isProcessing = false
                             }
                         }
                     },
                     modifier = Modifier
-                        .weight(0.6f)
+                        .weight(0.65f)
                         .height(56.dp),
-                    enabled = !isProcessing && (selectedPayment != "CASH" || isAmountSufficient),
+                    enabled = !isProcessing,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Green500,
@@ -374,10 +385,10 @@ fun ChargeScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Icon(Icons.Filled.Check, contentDescription = null)
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Charge",
+                            text = "Charge & Print",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -387,79 +398,27 @@ fun ChargeScreen(
         }
     }
 
-    // Receipt Preview Dialog
+    // Receipt Preview / Sale Complete Dialog
     if (showReceiptPreview) {
+        val receiptToShow = completedReceipt ?: previewReceipt
+        val linesToShow = if (completedLines.isNotEmpty()) completedLines else uiState.ticketLines
+
         ReceiptPreviewDialog(
-            receipt = completedReceipt ?: previewReceipt,
-            lines = uiState.ticketLines,
+            receipt = receiptToShow,
+            lines = linesToShow,
             businessName = uiState.businessName,
             currencyCode = uiState.currencyCode,
             isDualCurrencyEnabled = uiState.isDualCurrencyEnabled,
             secondaryCurrencyCode = uiState.secondaryCurrencyCode,
             exchangeRate = uiState.exchangeRate,
-            onDismiss = { showReceiptPreview = false }
-        )
-    }
-
-    // Success Dialog
-    if (showSuccessDialog) {
-        AlertDialog(
-            onDismissRequest = { },
-            icon = {
-                Icon(
-                    imageVector = Icons.Filled.CheckCircle,
-                    contentDescription = null,
-                    tint = Green500,
-                    modifier = Modifier.size(48.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "Sale Complete!",
-                    textAlign = TextAlign.Center
-                )
-            },
-            text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Receipt $receiptNumber has been created.",
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = "Total Paid: ${uiState.currencyCode} ${formatAmount(totalPrimary)}" +
-                                if (uiState.isDualCurrencyEnabled) " (${uiState.secondaryCurrencyCode} ${formatAmount(totalSecondary)})" else "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Green500,
-                        textAlign = TextAlign.Center
-                    )
+            onDismiss = {
+                showReceiptPreview = false
+                if (isSaleFinished) {
+                    onSaleComplete()
                 }
             },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showSuccessDialog = false
-                        onSaleComplete()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Green500)
-                ) {
-                    Text("New Sale")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        showSuccessDialog = false
-                        showReceiptPreview = true
-                    }
-                ) {
-                    Icon(Icons.Filled.Receipt, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("View Receipt")
-                }
+            onPrint = {
+                viewModel.reprintReceipt(receiptToShow, linesToShow)
             }
         )
     }
@@ -480,12 +439,9 @@ private fun PaymentMethodButton(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) color.copy(alpha = 0.2f)
-            else MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isSelected) color.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
         ),
-        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(color)
-        ) else null
+        border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = androidx.compose.ui.graphics.SolidColor(color), width = 2.dp) else null
     ) {
         Column(
             modifier = Modifier
@@ -505,7 +461,7 @@ private fun PaymentMethodButton(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isSelected) color else MaterialTheme.colorScheme.onSurface
             )
         }
     }

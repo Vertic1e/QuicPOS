@@ -47,6 +47,9 @@ interface ReceiptDao {
     @Query("UPDATE receipts SET status = :status WHERE receiptNumber = :receiptNumber")
     suspend fun updateReceiptStatus(receiptNumber: String, status: String)
 
+    @Query("UPDATE receipts SET status = :status, totalAmount = :newTotal WHERE receiptNumber = :receiptNumber")
+    suspend fun updateReceiptStatusAndTotal(receiptNumber: String, status: String, newTotal: Double)
+
     @Query("SELECT COUNT(*) FROM receipts")
     fun getReceiptCount(): Flow<Int>
 

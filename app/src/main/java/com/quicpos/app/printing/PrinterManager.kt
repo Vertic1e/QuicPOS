@@ -9,18 +9,31 @@ import com.quicpos.app.domain.model.Receipt
 import com.quicpos.app.domain.model.TicketLine
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.net.InetSocketAddress
+import java.net.Socket
 import javax.inject.Inject
 import javax.inject.Singleton
+
+data class DiscoveredPrinter(
+    val name: String,
+    val address: String,
+    val type: String, // "BLUETOOTH", "TCP"
+    val port: Int = 9100,
+    val isPaired: Boolean = false
+)
 
 /**
  * Unified printer manager that supports Built-in (Sunmi / Internal Thermal / Serial),
  * Bluetooth, and Network (TCP) printers.
- * Handles connection lifecycle, receipt formatting, and logo bit image rasterization.
+ * Handles device discovery, connection lifecycle, receipt formatting, and logo bit image rasterization.
  */
 @Singleton
 class PrinterManager @Inject constructor(
@@ -29,7 +42,6 @@ class PrinterManager @Inject constructor(
 ) {
     private val bluetoothConnection = BluetoothPrinterConnection()
     private val tcpConnection = TcpPrinterConnection()
-    private val receiptFormatter = ReceiptFormatter()
     private val printMutex = Mutex()
 
     sealed class PrinterState {
@@ -44,6 +56,56 @@ class PrinterManager @Inject constructor(
 
     val isConnected: Boolean
         get() = state is PrinterState.Connected
+
+    /**
+     * Search for nearby available or paired printers.
+     */
+    suspend fun searchPrinters(type: String): List<DiscoveredPrinter> = withContext(Dispatchers.IO) {
+        val result = mutableListOf<DiscoveredPrinter>()
+
+        if (type == "BLUETOOTH" || type == "ALL") {
+            val paired = bluetoothConnection.getPairedDevices()
+            for ((name, mac) in paired) {
+                result.add(
+                    DiscoveredPrinter(
+                        name = name,
+                        address = mac,
+                        type = "BLUETOOTH",
+                        isPaired = true
+                    )
+                )
+            }
+        }
+
+        if (type == "TCP" || type == "ALL") {
+            // Quick subnet probe on common POS printer IPs (192.168.1.x, port 9100)
+            val ipProbes = (100..115).map { "192.168.1.$it" } + listOf("192.168.0.100", "192.168.0.101", "10.0.2.2")
+            val networkPrinters = probeNetworkPrinters(ipProbes, port = 9100)
+            result.addAll(networkPrinters)
+        }
+
+        result
+    }
+
+    private suspend fun probeNetworkPrinters(ipList: List<String>, port: Int): List<DiscoveredPrinter> = coroutineScope {
+        ipList.map { ip ->
+            async(Dispatchers.IO) {
+                try {
+                    Socket().use { socket ->
+                        socket.connect(InetSocketAddress(ip, port), 250)
+                        DiscoveredPrinter(
+                            name = "Network ESC/POS Printer ($ip)",
+                            address = ip,
+                            port = port,
+                            type = "TCP"
+                        )
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        }.awaitAll().filterNotNull()
+    }
 
     /**
      * Connect to the configured printer.
@@ -117,7 +179,9 @@ class PrinterManager @Inject constructor(
                 loadLogoBitmap(settings.receiptLogoUri)
             } else null
 
-            val data = receiptFormatter.formatReceipt(
+            val formatter = ReceiptFormatter(charWidth = settings.charWidth)
+
+            val data = formatter.formatReceipt(
                 receipt = receipt,
                 lines = lines,
                 businessName = name,
@@ -127,7 +191,9 @@ class PrinterManager @Inject constructor(
                 isDualCurrencyEnabled = settings.isDualCurrencyEnabled,
                 secondaryCurrencyCode = settings.secondaryCurrencyCode,
                 exchangeRate = settings.exchangeRate,
-                logoBitmap = logoBitmap
+                logoBitmap = logoBitmap,
+                customInitCmd = settings.escInitCmd,
+                customCutCmd = settings.escCutCmd
             )
 
             sendRawData(data)
@@ -170,8 +236,6 @@ class PrinterManager @Inject constructor(
                 }
             }
 
-            // If running in standard emulator or general Android environment without physical /dev node:
-            // simulated success / Android print framework ready
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -205,11 +269,18 @@ class PrinterManager @Inject constructor(
         } else null
 
         val logoBytes = if (logoBitmap != null) {
-            EscPosCommands.bitmapToRasterBitImage(logoBitmap, 384)
+            EscPosCommands.bitmapToRasterBitImage(logoBitmap, if (settings.paperWidth == "80mm") 512 else 384)
         } else byteArrayOf()
 
+        val initBytes = EscPosCommands.hexToBytes(settings.escInitCmd).takeIf { it.isNotEmpty() }
+            ?: EscPosCommands.INIT
+        val cutBytes = EscPosCommands.hexToBytes(settings.escCutCmd).takeIf { it.isNotEmpty() }
+            ?: EscPosCommands.CUT_PAPER_PARTIAL
+
+        val divider = if (settings.paperWidth == "80mm") "────────────────────────────────────────────────" else "────────────────────────────────"
+
         val data = EscPosCommands.buildCommand(
-            EscPosCommands.INIT,
+            initBytes,
             logoBytes,
             EscPosCommands.ALIGN_CENTER,
             EscPosCommands.TEXT_DOUBLE_SIZE,
@@ -220,14 +291,18 @@ class PrinterManager @Inject constructor(
             EscPosCommands.BOLD_OFF,
             EscPosCommands.textToBytes("Test Print Successful"),
             EscPosCommands.LF,
-            EscPosCommands.textToBytes("────────────────────────────────"),
+            EscPosCommands.textToBytes(divider),
             EscPosCommands.LF,
-            EscPosCommands.textToBytes("Printer Type: ${settings.printerType}"),
+            EscPosCommands.textToBytes("Printer: ${settings.printerName}"),
             EscPosCommands.LF,
-            EscPosCommands.textToBytes("Printer is working correctly."),
+            EscPosCommands.textToBytes("Model: ${settings.printerModel} (${settings.paperWidth})"),
+            EscPosCommands.LF,
+            EscPosCommands.textToBytes("Mode: ${settings.printerType}"),
+            EscPosCommands.LF,
+            EscPosCommands.textToBytes("Printer communication is active."),
             EscPosCommands.LF,
             EscPosCommands.feedLines(4),
-            EscPosCommands.CUT_PAPER_PARTIAL
+            cutBytes
         )
 
         return sendRawData(data)
@@ -237,6 +312,9 @@ class PrinterManager @Inject constructor(
      * Open the connected cash drawer.
      */
     suspend fun openCashDrawer(): Result<Unit> {
-        return sendRawData(EscPosCommands.OPEN_CASH_DRAWER)
+        val settings = settingsRepository.getSettings()
+        val drawerBytes = EscPosCommands.hexToBytes(settings.escDrawerCmd).takeIf { it.isNotEmpty() }
+            ?: EscPosCommands.OPEN_CASH_DRAWER
+        return sendRawData(drawerBytes)
     }
 }

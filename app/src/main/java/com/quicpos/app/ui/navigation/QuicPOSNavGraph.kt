@@ -29,6 +29,7 @@ fun QuicPOSNavGraph(
         composable(Screen.Sales.route) {
             SalesScreen(
                 onNavigateToTicket = { navController.navigate(Screen.Ticket.route) },
+                onNavigateToCharge = { navController.navigate(Screen.Charge.route) },
                 onNavigateToScanner = { navController.navigate(Screen.BarcodeScanner.route) },
                 viewModel = salesViewModel
             )

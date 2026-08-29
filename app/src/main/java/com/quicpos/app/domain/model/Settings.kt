@@ -9,9 +9,19 @@ data class Settings(
     val layoutMode: String = "GRID", // "GRID" or "LIST"
     val language: String = "en",
     val useBarcodeSanner: Boolean = true,
+
+    // Printer settings
+    val printerName: String = "Main Thermal Printer",
+    val printerModel: String = "Generic ESC/POS",
     val printerType: String = "BUILT_IN", // "BUILT_IN", "BLUETOOTH", "TCP"
     val printerAddress: String = "",
     val printerPort: Int = 9100,
+    val paperWidth: String = "58mm", // "58mm", "80mm"
+    val printMode: String = "STANDARD", // "STANDARD", "RASTER", "RAW"
+    val escInitCmd: String = "1B40",
+    val escCutCmd: String = "1D5601",
+    val escDrawerCmd: String = "1B700019FF",
+
     val receiptHeader: String = "Thank you for shopping!",
     val receiptFooter: String = "Please come again",
     val receiptLogoUri: String = "",
@@ -29,6 +39,7 @@ data class Settings(
 
     val isGridLayout: Boolean get() = layoutMode == "GRID"
     val isPrinterConfigured: Boolean get() = printerType == "BUILT_IN" || (printerType.isNotBlank() && printerAddress.isNotBlank())
+    val charWidth: Int get() = if (paperWidth == "80mm") 48 else 32
 
     fun formatAmount(amount: Double): String {
         val formatted = if (amount == amount.toLong().toDouble()) {
@@ -48,7 +59,6 @@ data class Settings(
         } else if (currencyCode == "USD" && secondaryCurrencyCode == "KHR") {
             amountPrimary * exchangeRate
         } else {
-            // General conversion: Primary / Rate
             amountPrimary / exchangeRate
         }
     }

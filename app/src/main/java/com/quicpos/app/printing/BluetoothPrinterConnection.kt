@@ -29,6 +29,22 @@ class BluetoothPrinterConnection {
         get() = socket?.isConnected == true
 
     /**
+     * Get list of paired Bluetooth devices.
+     */
+    @SuppressLint("MissingPermission")
+    fun getPairedDevices(): List<Pair<String, String>> {
+        return try {
+            val adapter = BluetoothAdapter.getDefaultAdapter() ?: return emptyList()
+            if (!adapter.isEnabled) return emptyList()
+            adapter.bondedDevices?.map { device ->
+                (device.name ?: "Unknown Bluetooth Device") to device.address
+            } ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    /**
      * Connect to a Bluetooth printer by MAC address.
      * @param macAddress The MAC address of the printer (e.g., "00:11:22:33:44:55")
      */

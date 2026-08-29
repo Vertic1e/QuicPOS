@@ -19,6 +19,7 @@ import com.quicpos.app.ui.components.*
 @Composable
 fun SalesScreen(
     onNavigateToTicket: () -> Unit,
+    onNavigateToCharge: () -> Unit,
     onNavigateToScanner: () -> Unit,
     viewModel: SalesViewModel = hiltViewModel()
 ) {
@@ -165,7 +166,7 @@ fun SalesScreen(
                     totalAmount = uiState.grandTotal,
                     currencyCode = uiState.currencyCode,
                     itemCount = uiState.ticketItemCount,
-                    onClick = onNavigateToTicket,
+                    onClick = onNavigateToCharge,
                     modifier = Modifier.padding(16.dp)
                 )
             }
