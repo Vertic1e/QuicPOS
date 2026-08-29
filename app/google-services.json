@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "226163107877",
+    "project_id": "quicpos-b1912",
+    "storage_bucket": "quicpos-b1912.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226163107877:android:e4821c14caab11bb28b7cc",
+        "android_client_info": {
+          "package_name": "com.quicpos.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAv3HbMHTH5mDmjKHi0IQsRSFi30vN4wAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226163107877:android:e4821c14caab11bb28b7cc",
+        "android_client_info": {
+          "package_name": "com.quicpos.app.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAv3HbMHTH5mDmjKHi0IQsRSFi30vN4wAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

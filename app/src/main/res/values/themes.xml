@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.QuicPOS" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/green_primary</item>
+        <item name="android:colorPrimaryDark">@color/green_dark</item>
+        <item name="android:colorAccent">@color/green_light</item>
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="android:statusBarColor">@color/background_dark</item>
+        <item name="android:navigationBarColor">@color/background_dark</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>

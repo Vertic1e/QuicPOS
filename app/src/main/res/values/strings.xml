@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QuicPOS</string>
+
+    <!-- Navigation -->
+    <string name="nav_sales">Sales</string>
+    <string name="nav_receipts">Receipts</string>
+    <string name="nav_items">Items</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_back_office">Back Office</string>
+    <string name="nav_apps">Apps</string>
+    <string name="nav_support">Support</string>
+
+    <!-- Sales -->
+    <string name="search_items">Search items…</string>
+    <string name="all_items">All Items</string>
+    <string name="favorites">Favorites</string>
+    <string name="charge">CHARGE</string>
+    <string name="add_customer">Add Customer</string>
+    <string name="ticket">Ticket</string>
+    <string name="no_items_in_ticket">No items in ticket</string>
+    <string name="add_items">Add items</string>
+    <string name="clear_ticket">Clear Ticket</string>
+    <string name="subtotal">Subtotal</string>
+    <string name="discount">Discount</string>
+    <string name="tax">Tax</string>
+    <string name="total">Total</string>
+
+    <!-- Charge -->
+    <string name="total_due">Total Due</string>
+    <string name="payment_method">Payment Method</string>
+    <string name="cash">Cash</string>
+    <string name="card">Card</string>
+    <string name="other">Other</string>
+    <string name="cash_tendered">Cash Tendered</string>
+    <string name="change">Change</string>
+    <string name="complete_sale">Complete Sale</string>
+    <string name="sale_complete">Sale Complete!</string>
+
+    <!-- Items -->
+    <string name="create_item">Create Item</string>
+    <string name="edit_item">Edit Item</string>
+    <string name="item_name">Item Name</string>
+    <string name="category">Category</string>
+    <string name="no_category">No Category</string>
+    <string name="sku">SKU</string>
+    <string name="barcode">Barcode</string>
+    <string name="sold_by">Sold By</string>
+    <string name="each">Each</string>
+    <string name="weight">Weight</string>
+    <string name="price">Price</string>
+    <string name="cost">Cost</string>
+    <string name="variable_price">Variable Price</string>
+    <string name="track_stock">Track Stock</string>
+    <string name="in_stock">In Stock</string>
+    <string name="representation_color">Representation Color</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Categories -->
+    <string name="categories">Categories</string>
+    <string name="add_category">Add Category</string>
+    <string name="edit_category">Edit Category</string>
+    <string name="category_name">Category Name</string>
+    <string name="no_categories">No categories yet</string>
+
+    <!-- Modifiers -->
+    <string name="modifiers">Modifiers</string>
+    <string name="add_modifier">Add Modifier</string>
+    <string name="modifier_name">Modifier Name</string>
+    <string name="extra_price">Extra Price</string>
+    <string name="no_modifiers">No modifiers yet</string>
+
+    <!-- Receipts -->
+    <string name="search_receipts">Search receipts…</string>
+    <string name="no_receipts">No receipts yet</string>
+    <string name="refund">Refund</string>
+    <string name="refund_receipt">Refund Receipt</string>
+    <string name="refunded">Refunded</string>
+    <string name="print">Print</string>
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+
+    <!-- Settings -->
+    <string name="business_name">Business Name</string>
+    <string name="pos_register_name">POS Register Name</string>
+    <string name="currency">Currency</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="home_layout">Home Screen Layout</string>
+    <string name="grid">Grid</string>
+    <string name="list">List</string>
+    <string name="use_barcode_scanner">Use camera to scan barcodes</string>
+    <string name="printers">Printers</string>
+    <string name="taxes_surcharges">Taxes &amp; Surcharges</string>
+    <string name="receipt_header">Receipt Header</string>
+    <string name="receipt_footer">Receipt Footer</string>
+    <string name="language">Language</string>
+    <string name="version">Version</string>
+
+    <!-- Printer Setup -->
+    <string name="printer_setup">Printer Setup</string>
+    <string name="connection_type">Connection Type</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="network_tcp">Network (TCP)</string>
+    <string name="mac_address">Bluetooth MAC Address</string>
+    <string name="ip_address">IP Address</string>
+    <string name="port">Port</string>
+    <string name="receipt_template">Receipt Template</string>
+    <string name="test_print">Test Print</string>
+
+    <!-- Tax Setup -->
+    <string name="add_tax">Add Tax</string>
+    <string name="tax_name">Tax Name</string>
+    <string name="rate">Rate (%)</string>
+    <string name="inclusive">Inclusive</string>
+    <string name="exclusive">Exclusive</string>
+
+    <!-- Scanner -->
+    <string name="scan_barcode">Scan Barcode</string>
+    <string name="position_barcode">Position barcode within the frame</string>
+    <string name="camera_permission_required">Camera permission required</string>
+    <string name="grant_permission">Grant Permission</string>
+</resources>

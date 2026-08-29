@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QuicPOS</string>
+
+    <!-- Navigation -->
+    <string name="nav_sales">ការលក់</string>
+    <string name="nav_receipts">វិក្កយបត្រ</string>
+    <string name="nav_items">ទំនិញ</string>
+    <string name="nav_settings">ការកំណត់</string>
+    <string name="nav_back_office">ការិយាល័យ</string>
+    <string name="nav_support">ជំនួយ</string>
+
+    <!-- Sales -->
+    <string name="search_items">ស្វែងរកទំនិញ…</string>
+    <string name="all_items">ទំនិញទាំងអស់</string>
+    <string name="favorites">ចំណូលចិត្ត</string>
+    <string name="charge">បង់ប្រាក់</string>
+    <string name="add_customer">បន្ថែមអតិថិជន</string>
+    <string name="ticket">សំបុត្រ</string>
+    <string name="subtotal">សរុបរង</string>
+    <string name="discount">បញ្ចុះតម្លៃ</string>
+    <string name="tax">ពន្ធ</string>
+    <string name="total">សរុប</string>
+
+    <!-- Charge -->
+    <string name="total_due">ត្រូវបង់សរុប</string>
+    <string name="cash">សាច់ប្រាក់</string>
+    <string name="card">កាត</string>
+    <string name="change">ប្រាក់អាប់</string>
+    <string name="complete_sale">បញ្ចប់ការលក់</string>
+    <string name="sale_complete">ការលក់បានបញ្ចប់!</string>
+
+    <!-- Items -->
+    <string name="create_item">បង្កើតទំនិញ</string>
+    <string name="edit_item">កែប្រែទំនិញ</string>
+    <string name="item_name">ឈ្មោះទំនិញ</string>
+    <string name="category">ប្រភេទ</string>
+    <string name="price">តម្លៃ</string>
+    <string name="cost">ថ្លៃដើម</string>
+    <string name="save">រក្សាទុក</string>
+    <string name="delete">លុប</string>
+    <string name="cancel">បោះបង់</string>
+
+    <!-- Settings -->
+    <string name="business_name">ឈ្មោះអាជីវកម្ម</string>
+    <string name="dark_mode">មុខងារងងឹត</string>
+    <string name="language">ភាសា</string>
+    <string name="version">កំណែ</string>
+</resources>
