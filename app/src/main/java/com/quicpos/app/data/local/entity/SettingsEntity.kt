@@ -49,7 +49,7 @@ data class SettingsEntity(
         const val KEY_BACK_OFFICE_PIN = "back_office_pin"
 
         // Default Values
-        const val DEFAULT_BUSINESS_NAME = "QuicPOS Store"
+        const val DEFAULT_BUSINESS_NAME = "FastPOS"
         const val DEFAULT_POS_REGISTER = "POS 1"
         const val DEFAULT_CURRENCY_CODE = "KHR"
         const val DEFAULT_CURRENCY_SYMBOL = "៛"

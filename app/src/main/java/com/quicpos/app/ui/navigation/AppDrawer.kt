@@ -18,6 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quicpos.app.ui.theme.Green500
 import com.quicpos.app.ui.theme.Green800
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
+import com.quicpos.app.R
 
 @Composable
 fun AppDrawer(
@@ -137,19 +141,20 @@ private fun DrawerHeader(
             verticalAlignment = Alignment.Top
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                // Business Logo Placeholder
+                // FastPOS Brand Logo
                 Box(
                     modifier = Modifier
                         .size(56.dp)
-                        .clip(CircleShape)
-                        .background(Green800),
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = businessName.take(2).uppercase(),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.Bold
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_pos_logo),
+                        contentDescription = "FastPOS Logo",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
                     )
                 }
 

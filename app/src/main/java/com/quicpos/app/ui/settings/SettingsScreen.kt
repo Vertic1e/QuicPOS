@@ -198,7 +198,7 @@ fun SettingsScreen(
             SettingsClickItem(
                 icon = Icons.Filled.Info,
                 title = "Version",
-                subtitle = "QuicPOS v1.0.0",
+                subtitle = "FastPOS v1.0.0",
                 onClick = { }
             )
             SettingsClickItem(
